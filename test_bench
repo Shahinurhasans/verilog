@@ -1,0 +1,173 @@
+// ============================================================================
+// SINGLE COMPREHENSIVE TESTBENCH
+// ============================================================================
+module testbench;
+    // Testbench signals
+    reg A, B, C, D;
+    wire F_gate, F_dataflow, F_behavioral, F_switch;
+    
+    // Instantiate all four modeling styles
+    sop_gate_level uut_gate(
+      .A(A), .B(B), .C(C), .D(D), .F_G(F_gate)
+    );
+    
+    sop_dataflow uut_dataflow(
+      .A(A), .B(B), .C(C), .D(D), .F_DF(F_dataflow)
+    );
+    
+    sop_behavioral uut_behavioral(
+      .A(A), .B(B), .C(C), .D(D), .F_BH(F_behavioral)
+    );
+    
+    sop_switch_level uut_switch(
+      .A(A), .B(B), .C(C), .D(D), .F_SW(F_switch)
+    );
+    
+    // Variables for testing
+    integer i, errors;
+    reg expected;
+    reg m0, m2, m4, m9;  // Individual minterms
+    
+    initial begin
+        // Create VCD dump file for waveform viewing
+        $dumpfile("dump.vcd");
+        $dumpvars(0, testbench);
+        
+        errors = 0;
+        
+        // Header
+        $display("\n");
+        $display("================================================================================");
+        $display("          BOOLEAN SOP CIRCUIT VERIFICATION - ROLL NUMBER: 2009049");
+        $display("================================================================================");
+        $display("Minterms: Σ(0,2,4,9)");
+        $display("Boolean Expression: F = A'B'C'D' + A'B'CD' + A'BC'D' + AB'C'D");
+        $display("================================================================================");
+        $display("\n");
+        
+        // Truth table with individual minterms
+        $display("===================================================================================");
+        $display("                    TRUTH TABLE WITH INDIVIDUAL MINTERMS");
+        $display("===================================================================================");
+        $display("Dec | A B C D | A'B'C'D' | A'B'CD' | A'BC'D' | AB'C'D | F_exp | Gate | Data | Behv | Swch");
+        $display("----|---------|----------|---------|---------|--------|-------|------|------|------|------");
+        
+        // Test all 16 combinations
+        for (i = 0; i < 16; i = i + 1) begin
+            {A, B, C, D} = i;
+            #10;
+            
+            // Calculate individual minterms
+            m0 = (~A & ~B & ~C & ~D);  // Minterm 0
+            m2 = (~A & ~B & C & ~D);   // Minterm 2
+            m4 = (~A & B & ~C & ~D);   // Minterm 4
+            m9 = (A & ~B & ~C & D);    // Minterm 9
+            
+            // Expected output
+            expected = (i == 0) || (i == 2) || (i == 4) || (i == 9);
+            
+            // Display results
+            $display(" %2d | %b %b %b %b |    %b     |    %b    |    %b    |   %b    |   %b   |  %b   |  %b   |  %b   |  %b",
+                     i, A, B, C, D, m0, m2, m4, m9, expected,
+                     F_gate, F_dataflow, F_behavioral, F_switch);
+            
+            // Check for errors
+            if (F_gate !== expected || F_dataflow !== expected || 
+                F_behavioral !== expected || F_switch !== expected) begin
+                errors = errors + 1;
+                $display("     >>> ERROR: Output mismatch detected! <<<");
+            end
+        end
+        
+        $display("===================================================================================");
+        $display("\n");
+        
+        // Summary of modeling styles comparison
+        $display("================================================================================");
+        $display("                    MODELING STYLES COMPARISON");
+        $display("================================================================================");
+        $display("Dec | A B C D | Expected | Gate-Level | Dataflow | Behavioral | Switch-Level");
+        $display("----|---------|----------|------------|----------|------------|-------------");
+        
+        for (i = 0; i < 16; i = i + 1) begin
+            {A, B, C, D} = i;
+            #10;
+            expected = (i == 0) || (i == 2) || (i == 4) || (i == 9);
+            
+            $display(" %2d | %b %b %b %b |    %b     |     %b      |    %b     |     %b      |      %b",
+                     i, A, B, C, D, expected, F_gate, F_dataflow, F_behavioral, F_switch);
+        end
+        
+        $display("================================================================================");
+        $display("\n");
+        
+        // Test result summary
+        $display("================================================================================");
+        $display("                           TEST SUMMARY");
+        $display("================================================================================");
+        if (errors == 0) begin
+            $display("✓✓✓ ALL TESTS PASSED SUCCESSFULLY! ✓✓✓");
+            $display("");
+            $display("All four modeling styles produced correct outputs:");
+            $display("  • Gate-Level Modeling    : PASS");
+            $display("  • Dataflow Modeling      : PASS");
+            $display("  • Behavioral Modeling    : PASS");
+            $display("  • Switch-Level Modeling  : PASS");
+            $display("");
+            $display("Function outputs 1 for minterms: 0, 2, 4, 9");
+            $display("Function outputs 0 for all other combinations");
+        end else begin
+            $display("✗✗✗ %0d ERROR(S) DETECTED ✗✗✗", errors);
+            $display("Please check the implementation!");
+        end
+        $display("================================================================================");
+        $display("\n");
+        
+        // Detailed minterm verification
+        $display("================================================================================");
+        $display("                    DETAILED MINTERM VERIFICATION");
+        $display("================================================================================");
+        
+        {A,B,C,D} = 4'b0000; #10;
+        $display("Minterm 0 (A'B'C'D') | ABCD = 0000 | F = %b | Expected = 1 | %s", 
+                 F_gate, F_gate ? "✓ PASS" : "✗ FAIL");
+        
+        {A,B,C,D} = 4'b0010; #10;
+        $display("Minterm 2 (A'B'CD')  | ABCD = 0010 | F = %b | Expected = 1 | %s", 
+                 F_gate, F_gate ? "✓ PASS" : "✗ FAIL");
+        
+        {A,B,C,D} = 4'b0100; #10;
+        $display("Minterm 4 (A'BC'D')  | ABCD = 0100 | F = %b | Expected = 1 | %s", 
+                 F_gate, F_gate ? "✓ PASS" : "✗ FAIL");
+        
+        {A,B,C,D} = 4'b1001; #10;
+        $display("Minterm 9 (AB'C'D)   | ABCD = 1001 | F = %b | Expected = 1 | %s", 
+                 F_gate, F_gate ? "✓ PASS" : "✗ FAIL");
+        
+        $display("================================================================================");
+        $display("\n");
+        
+        // Boolean expression info
+        $display("================================================================================");
+        $display("                         DESIGN INFORMATION");
+        $display("================================================================================");
+        $display("Roll Number: 2009049");
+        $display("Digits: 2, 0, 0, 9, 0, 4, 9");
+        $display("Unique Minterms: 0, 2, 4, 9");
+        $display("");
+        $display("Boolean Expression (SOP form):");
+        $display("  F(A,B,C,D) = A'B'C'D' + A'B'CD' + A'BC'D' + AB'C'D");
+        $display("");
+        $display("Minterm Notation:");
+        $display("  F(A,B,C,D) = Σ(0, 2, 4, 9)");
+        $display("");
+        $display("Truth Table Summary:");
+        $display("  Total combinations: 16");
+        $display("  Output = 1 for: 4 combinations (minterms 0,2,4,9)");
+        $display("  Output = 0 for: 12 combinations");
+        $display("================================================================================");
+        $display("\n");
+        
+        $finish;
+    end
+endmodule
