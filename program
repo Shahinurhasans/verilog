@@ -1,0 +1,107 @@
+// ============================================================================
+// COMPLETE BOOLEAN SOP CIRCUIT IMPLEMENTATION
+// Roll Number: 2009049
+// Minterms: Σ(0,2,4,9)
+// Boolean Expression: F = A'B'C'D' + A'B'CD' + A'BC'D' + AB'C'D
+// ============================================================================
+
+// ============================================================================
+// 1. GATE-LEVEL MODELING
+// ============================================================================
+module sop_gate_level(
+    input A, B, C, D,
+    output F_G
+);
+    wire w0, w1, w2, w3;
+    wire A_n, B_n, C_n, D_n;
+    
+    // Inverters for complements
+    not n1(A_n, A);
+    not n2(B_n, B);
+    not n3(C_n, C);
+    not n4(D_n, D);
+    
+    // Minterm 0: A'B'C'D' (0000)
+    and a1(w0, A_n, B_n, C_n, D_n);
+    
+    // Minterm 2: A'B'CD' (0010)
+    and a2(w1, A_n, B_n, C, D_n);
+    
+    // Minterm 4: A'BC'D' (0100)
+    and a3(w2, A_n, B, C_n, D_n);
+    
+    // Minterm 9: AB'C'D (1001)
+    and a4(w3, A, B_n, C_n, D);
+    
+    // OR all minterms together
+  or o1(F_G, w0, w1, w2, w3);
+endmodule
+
+// ============================================================================
+// 2. DATAFLOW MODELING
+// ============================================================================
+module sop_dataflow(
+    input A, B, C, D,
+    output F_DF
+);
+    // Direct boolean expression using logical operators
+    assign F_DF = (~A & ~B & ~C & ~D) |  // Minterm 0: 0000
+               (~A & ~B & C & ~D)  |  // Minterm 2: 0010
+               (~A & B & ~C & ~D)  |  // Minterm 4: 0100
+               (A & ~B & ~C & D);     // Minterm 9: 1001
+endmodule
+
+// ============================================================================
+// 3. BEHAVIORAL MODELING
+// ============================================================================
+module sop_behavioral(
+    input A, B, C, D,
+    output reg F_BH
+);
+    // Using procedural block with case statement
+    always @(*) begin
+        case ({A, B, C, D})
+            4'b0000: F_BH = 1'b1;  // Minterm 0
+            4'b0010: F_BH = 1'b1;  // Minterm 2
+            4'b0100: F_BH = 1'b1;  // Minterm 4
+            4'b1001: F_BH = 1'b1;  // Minterm 9
+            default: F_BH = 1'b0;  // All other combinations
+        endcase
+    end
+endmodule
+
+// ============================================================================
+// 4. SWITCH-LEVEL (CMOS) MODELING
+// ============================================================================
+module sop_switch_level(
+    input A, B, C, D,
+    output F_SW
+);
+    supply1 vdd;  // Power supply (logic 1)
+    supply0 gnd;  // Ground (logic 0)
+    
+    wire A_n, B_n, C_n, D_n;
+    
+    // Inverters using CMOS transistors
+    pmos p_a(A_n, vdd, A);
+    nmos n_a(A_n, gnd, A);
+    
+    pmos p_b(B_n, vdd, B);
+    nmos n_b(B_n, gnd, B);
+    
+    pmos p_c(C_n, vdd, C);
+    nmos n_c(C_n, gnd, C);
+    
+    pmos p_d(D_n, vdd, D);
+    nmos n_d(D_n, gnd, D);
+    
+    // Minterm logic using dataflow (simplified CMOS)
+    assign F_SW = (A_n & B_n & C_n & D_n) |  // Minterm 0
+               (A_n & B_n & C & D_n)   |  // Minterm 2
+               (A_n & B & C_n & D_n)   |  // Minterm 4
+               (A & B_n & C_n & D);       // Minterm 9
+endmodule
+
+// ============================================================================
+// SINGLE COMPREHENSIVE TESTBENCH
+//  
